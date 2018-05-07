@@ -3,24 +3,28 @@ package uuid
 import (
 	"sync"
 	"sync/atomic"
-	"errors"
 	"shortUrl/tools"
 	"fmt"
+	"errors"
+	"log"
 )
 
-var count uint32 // 发号器通道数量和id添加的步长
-
-var storeuuid []uint32
-
-var myBuffer *buffer
-
-var uuidClose = errors.New("发号器已关闭")
-
-var filename = "./uniqueidchdata"
+var (
+	count     uint32                 // 发号器通道数量和id添加的步长
+	storeuuid []uint32               // 发号器状态
+	myBuffer  *buffer                // 发号器实例
+	filename  = "./uniqueidchdata"   // 数据存储文件
+	uuidClose = errors.New("发号器已关闭") // 错误信息
+)
 
 func init() {
-	count = 10 // 默认步长 10
+	count = 10                              // 默认步长 10
+	err := tools.Load(&storeuuid, filename) // 加载历史数据
+	if err != nil {
+		fmt.Println(err)
+	}
 	myBuffer = newBuffer()
+
 }
 
 // 唯一ID结构
@@ -46,9 +50,17 @@ type buffer struct {
 
 func newBuffer() *buffer {
 	ch := make(chan *uuid, count)
-	var i uint32
-	for i = 0; i < count; i++ {
-		ch <- newuuid(i)
+
+	if len(storeuuid) > 0 { // 如果存在历史数据
+		for _, v := range storeuuid {
+			ch <- newuuid(v)
+		}
+		storeuuid = []uint32{}
+	} else { // 不存在历史数据
+		var i uint32
+		for i = 0; i < count; i++ {
+			ch <- newuuid(i)
+		}
 	}
 
 	return &buffer{
@@ -99,16 +111,16 @@ func Close() {
 	myBuffer.closing.Lock()
 	defer myBuffer.closing.Unlock()
 
-	myBuffer.closed = 1
+	myBuffer.closed = 1 // 关闭发号器
 
-	close(myBuffer.ch)
+	close(myBuffer.ch) // 关闭缓存通道
 
+	// 将发号器数据存储到本地
 	for uuid := range myBuffer.ch {
 		storeuuid = append(storeuuid, uuid.id)
 	}
-	fmt.Println(storeuuid)
 	err := tools.Store(storeuuid, filename)
 	if err != nil {
-		panic(err)
+		log.Fatalln("保存发号器数据失败", err)
 	}
 }

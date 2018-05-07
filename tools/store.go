@@ -15,7 +15,7 @@ func Store(data interface{}, filename string) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(filename, buffer.Bytes(), 0700)
+	err = ioutil.WriteFile(filename, buffer.Bytes(), 0600)
 
 	return nil
 }

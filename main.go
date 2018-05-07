@@ -60,8 +60,8 @@ func uniqueid_test() {
 	for i := 0; i < count; i++ {
 		go func() {
 			id, _ := uuid.GetID()
-			if id%10000 == 0 {
-				//fmt.Println(id)
+			if id%1000 == 0 {
+				fmt.Println(id)
 			}
 			wg.Done()
 		}()
