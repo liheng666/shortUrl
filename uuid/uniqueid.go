@@ -13,7 +13,7 @@ var (
 	count     uint32                 // 发号器通道数量和id添加的步长
 	storeuuid []uint32               // 发号器状态
 	myBuffer  *buffer                // 发号器实例
-	filename  = "./uniqueidchdata"   // 数据存储文件
+	filename  = "./cache/uniqueidchdata"   // 数据存储文件
 	uuidClose = errors.New("发号器已关闭") // 错误信息
 )
 
