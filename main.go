@@ -9,6 +9,10 @@ import (
 )
 
 func main() {
+	uniqueid_test()
+
+	return
+
 	mux := http.NewServeMux()
 
 	// icon 请求返回404
@@ -49,7 +53,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 // 发号器测试方法
 func uniqueid_test() {
 	fmt.Println("开始")
-	count := 10000000
+	count := 10000
 	var wg sync.WaitGroup
 	wg.Add(count)
 	t1 := time.Now()
@@ -65,5 +69,6 @@ func uniqueid_test() {
 	wg.Wait()
 	runTime := time.Since(t1)
 	fmt.Println("运行时长：", runTime)
+
 	defer uuid.Close()
 }

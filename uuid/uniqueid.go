@@ -4,11 +4,19 @@ import (
 	"sync"
 	"sync/atomic"
 	"errors"
+	"shortUrl/tools"
+	"fmt"
 )
 
 var count uint32 // 发号器通道数量和id添加的步长
-//var storeID  []int
+
+var storeuuid []uint32
+
 var myBuffer *buffer
+
+var uuidClose = errors.New("发号器已关闭")
+
+var filename = "./uniqueidchdata"
 
 func init() {
 	count = 10 // 默认步长 10
@@ -51,19 +59,19 @@ func newBuffer() *buffer {
 func (buffer *buffer) getID() (uint32, error) {
 	// 检测发号器是否已关闭
 	if buffer.closed == 1 {
-		return 0, errors.New("发号器已关闭")
+		return 0, uuidClose
 	}
 
 	buffer.closing.RLock()
 	defer buffer.closing.RUnlock()
 	// 再次检测发号器是否已关闭
 	if buffer.closed == 1 {
-		return 0, errors.New("发号器已关闭")
+		return 0, uuidClose
 	}
 
 	uuid, ok := <-buffer.ch
 	if !ok {
-		return 0, errors.New("发号器已关闭")
+		return 0, uuidClose
 	}
 	uuid.add()
 	id := uuid.id
@@ -92,5 +100,15 @@ func Close() {
 	defer myBuffer.closing.Unlock()
 
 	myBuffer.closed = 1
+
 	close(myBuffer.ch)
+
+	for uuid := range myBuffer.ch {
+		storeuuid = append(storeuuid, uuid.id)
+	}
+	fmt.Println(storeuuid)
+	err := tools.Store(storeuuid, filename)
+	if err != nil {
+		panic(err)
+	}
 }
