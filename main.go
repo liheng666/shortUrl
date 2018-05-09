@@ -11,12 +11,15 @@ import (
 
 var cacheDir = "./cache/"
 
-func init(){
+func init() {
 	// 判断缓存文件夹是否存在
-	 _, err := os.Stat(cacheDir)
-	 if os.IsNotExist(err) {
-		 os.Mkdir(cacheDir,0700)
-	 }
+	_, err := os.Stat(cacheDir)
+	if os.IsNotExist(err) {
+		os.Mkdir(cacheDir, 0700) // 当不存在时创建
+	}
+
+	// 初始化唯一ID发号器 步长为10
+	uuid.New(10, cacheDir+"uniqueidchdata")
 }
 
 func main() {

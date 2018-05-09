@@ -6,25 +6,29 @@ import (
 	"shortUrl/tools"
 	"fmt"
 	"errors"
-	"log"
 )
 
 var (
 	count     uint32                 // 发号器通道数量和id添加的步长
 	storeuuid []uint32               // 发号器状态
 	myBuffer  *buffer                // 发号器实例
-	filename  = "./cache/uniqueidchdata"   // 数据存储文件
+	filename  string                 // 本地存储文件路径
 	uuidClose = errors.New("发号器已关闭") // 错误信息
 )
 
-func init() {
-	count = 10                              // 默认步长 10
-	err := tools.Load(&storeuuid, filename) // 加载历史数据
+/**
+	初始化
+	c 步长
+	f 本地存储文件路径
+ */
+func New(c uint32, f string) {
+	count = c // 步长
+	filename = f
+	err := tools.Load(&storeuuid, f) // 加载历史数据
 	if err != nil {
 		fmt.Println(err)
 	}
 	myBuffer = newBuffer()
-
 }
 
 // 唯一ID结构
@@ -121,6 +125,6 @@ func Close() {
 	}
 	err := tools.Store(storeuuid, filename)
 	if err != nil {
-		log.Fatalln("保存发号器数据失败", err)
+		panic("保存发号器本地存储数据失败")
 	}
 }
