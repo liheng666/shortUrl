@@ -7,6 +7,7 @@ import (
 	"shortUrl/uuid"
 	"time"
 	"os"
+	"shortUrl/shortcode"
 )
 
 var cacheDir = "./cache/"
@@ -23,8 +24,8 @@ func init() {
 }
 
 func main() {
-	uniqueid_test()
-
+	//uniqueid_test()
+	//fmt.Println(shortcode.Encode(4000000000))
 	return
 
 	mux := http.NewServeMux()
