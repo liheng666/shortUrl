@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	count     uint32                 // 发号器通道数量和id添加的步长
-	storeuuid []uint32               // 发号器状态
+	count     uint64                 // 发号器通道数量和id添加的步长
+	storeuuid []uint64               // 发号器状态
 	myBuffer  *buffer                // 发号器实例
 	filename  string                 // 本地存储文件路径
 	uuidClose = errors.New("发号器已关闭") // 错误信息
@@ -21,7 +21,7 @@ var (
 	c 步长
 	f 本地存储文件路径
  */
-func New(c uint32, f string) {
+func New(c uint64, f string) {
 	count = c // 步长
 	filename = f
 	err := tools.Load(&storeuuid, f) // 加载历史数据
@@ -33,17 +33,17 @@ func New(c uint32, f string) {
 
 // 唯一ID结构
 type uuid struct {
-	id uint32
+	id uint64
 }
 
-func newuuid(id uint32) *uuid {
+func newuuid(id uint64) *uuid {
 	return &uuid{
 		id: id,
 	}
 }
 
 func (uuid *uuid) add() {
-	atomic.AddUint32(&uuid.id, count) // 将id添加固定步长
+	atomic.AddUint64(&uuid.id, count) // 将id添加固定步长
 }
 
 type buffer struct {
@@ -59,9 +59,9 @@ func newBuffer() *buffer {
 		for _, v := range storeuuid {
 			ch <- newuuid(v)
 		}
-		storeuuid = []uint32{}
+		storeuuid = []uint64{}
 	} else { // 不存在历史数据
-		var i uint32
+		var i uint64
 		for i = 0; i < count; i++ {
 			ch <- newuuid(i)
 		}
@@ -72,7 +72,7 @@ func newBuffer() *buffer {
 	}
 }
 
-func (buffer *buffer) getID() (uint32, error) {
+func (buffer *buffer) getID() (uint64, error) {
 	// 检测发号器是否已关闭
 	if buffer.closed == 1 {
 		return 0, uuidClose
@@ -97,7 +97,7 @@ func (buffer *buffer) getID() (uint32, error) {
 }
 
 // 获取唯一ID 公开方法
-func GetID() (id uint32, err error) {
+func GetID() (id uint64, err error) {
 	id, err = myBuffer.getID()
 	if err != nil {
 		return 0, err
