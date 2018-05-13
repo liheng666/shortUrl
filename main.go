@@ -3,13 +3,14 @@ package main
 import (
 	"net/http"
 	"fmt"
-	"sync"
 	"shortUrl/uuid"
-	"time"
 	"os"
+	"shortUrl/shortcode"
 )
 
 var cacheDir = "./cache/"
+
+var local = "127.0.0.1:8888/"
 
 func init() {
 	// 判断缓存文件夹是否存在
@@ -23,10 +24,6 @@ func init() {
 }
 
 func main() {
-	//uniqueid_test()
-
-	return
-
 	mux := http.NewServeMux()
 
 	// icon 请求返回404
@@ -56,33 +53,31 @@ func logMiddleware(h http.HandlerFunc) http.HandlerFunc {
 
 // 获取短域名
 func getShortUrl(w http.ResponseWriter, r *http.Request) {
-	//
+	urlStr := r.FormValue("url_srt")
+	if urlStr == "" {
+		fmt.Fprintf(w, "参数不存在")
+	}
+
+	id, err := uuid.GetID()
+	if err != nil {
+		panic("获取唯一ID错误")
+	}
+
+	str, err := shortcode.Encode(id)
+	if err != nil {
+		panic("获取短链接编码错误")
+	}
+
+	fmt.Fprintf(w, local+str)
 }
 
 // 短域名转跳
 func index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "hello world")
-}
+	str := r.URL.Path
+	rs := []rune(str)
+	str = string(rs[1:])
 
-// 发号器测试方法
-func uniqueid_test() {
-	fmt.Println("开始")
-	count := 10000
-	var wg sync.WaitGroup
-	wg.Add(count)
-	t1 := time.Now()
-	for i := 0; i < count; i++ {
-		go func() {
-			id, _ := uuid.GetID()
-			if id%1000 == 0 {
-				fmt.Println(id)
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-	runTime := time.Since(t1)
-	fmt.Println("运行时长：", runTime)
-
-	defer uuid.Close()
+	w.Header().Set("Location","http://llheng.info")
+	w.WriteHeader(302)
+	//fmt.Fprintf(w, str)
 }
