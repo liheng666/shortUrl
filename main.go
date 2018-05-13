@@ -7,7 +7,6 @@ import (
 	"shortUrl/uuid"
 	"time"
 	"os"
-	"shortUrl/shortcode"
 )
 
 var cacheDir = "./cache/"
@@ -25,8 +24,6 @@ func init() {
 
 func main() {
 	//uniqueid_test()
-
-	shortcode_test()
 
 	return
 
@@ -88,24 +85,4 @@ func uniqueid_test() {
 	fmt.Println("运行时长：", runTime)
 
 	defer uuid.Close()
-}
-
-func shortcode_test() {
-	str, err := shortcode.Encode(6500000)
-	if err != nil {
-		panic("10进制转64进制测试失败")
-	}
-	if str != "oOWw" {
-		panic("10进制转64进制测试失败")
-	}
-
-	id, err := shortcode.Decode("oOWw")
-	if err != nil {
-		panic("64进制转10进制测试失败")
-	}
-	if id != 6500000 {
-		panic("10进制转64进制测试失败")
-	}
-
-	fmt.Println("shortcode ok")
 }

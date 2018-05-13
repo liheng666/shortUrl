@@ -4,8 +4,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"shortUrl/tools"
-	"fmt"
 	"errors"
+	"os"
 )
 
 var (
@@ -26,7 +26,10 @@ func New(c uint64, f string) {
 	filename = f
 	err := tools.Load(&storeuuid, f) // 加载历史数据
 	if err != nil {
-		fmt.Println(err)
+		if !os.IsNotExist(err) {
+			panic(err)
+		}
+
 	}
 	myBuffer = newBuffer()
 }
