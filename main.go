@@ -3,9 +3,9 @@ package main
 import (
 	"net/http"
 	"fmt"
-	"shortUrl/uuid"
 	"os"
 	"shortUrl/shortcode"
+	"shortUrl/tools"
 )
 
 var cacheDir = "./cache/"
@@ -19,8 +19,8 @@ func init() {
 		os.Mkdir(cacheDir, 0700) // 当不存在时创建
 	}
 
-	// 初始化唯一ID发号器 步长为10
-	uuid.New(10, cacheDir+"uniqueidchdata")
+	// 初始化唯一ID发号器
+	tools.Newuid(cacheDir + "uidcache")
 }
 
 func main() {
@@ -58,7 +58,7 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "参数不存在")
 	}
 
-	id, err := uuid.GetID()
+	id, err := tools.GetId()
 	if err != nil {
 		panic("获取唯一ID错误")
 	}
@@ -77,7 +77,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	rs := []rune(str)
 	str = string(rs[1:])
 
-	w.Header().Set("Location","http://llheng.info")
+	w.Header().Set("Location", "http://llheng.info")
 	w.WriteHeader(302)
 	//fmt.Fprintf(w, str)
 }
