@@ -56,7 +56,7 @@ func Decode(str string) (uint64, error) {
 	return value, nil
 }
 
-// 过去字符在定义好的字符数组中的位置
+// 过去字符在定义好的字符数组中的位置（可以使用map优化）
 func searchV(rune rune) (uint64, error) {
 	for k, v := range strCode {
 		if v == rune {

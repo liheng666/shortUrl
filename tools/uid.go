@@ -9,12 +9,16 @@ import (
 var (
 	m        sync.Mutex
 	closed   bool
-	id       uint64 = 0 // 唯一ID
-	filename string     // 唯一ID缓存文件path
+	id       uint64 // 唯一ID
+	Id       uint64 // 唯一ID数据记录
+	filename string // 唯一ID缓存文件path
 	uidError = errors.New("唯一ID发号器已关闭")
-	Id       []uint64 // 唯一ID数据记录
 )
 
+/**
+初始发号器 会检查是否有缓存文件，有的话会加载缓存的数据
+file 缓存文件path
+ */
 func Newuid(file string) {
 	filename = file
 
@@ -24,10 +28,11 @@ func Newuid(file string) {
 			panic(err)
 		}
 	} else {
-		id = Id[0]
+		id = Id
 	}
 }
 
+// 获取uid
 func GetId() (uint64, error) {
 	if closed == true {
 		return 0, uidError
@@ -43,12 +48,13 @@ func GetId() (uint64, error) {
 	return n, nil
 }
 
+// 关闭应用是调用，会保存当前的发号状态
 func Closeuid() {
 	m.Lock()
 	closed = true
 	m.Unlock()
 
-	Id = []uint64{id}
+	Id = id
 	err := Store(Id, filename)
 	if err != nil {
 		panic(err)

@@ -3,6 +3,7 @@ package queue
 import (
 	"sync"
 	"errors"
+	"sync/atomic"
 )
 
 var queueClosedError = errors.New("消息队已关闭")
@@ -22,7 +23,7 @@ func NewMyQueue(n uint32) *myQueue {
 }
 
 // 将数据写入队列
-func (q *myQueue) push(v interface{}) (ok bool, err error) {
+func (q *myQueue) Push(v interface{}) (ok bool, err error) {
 	q.lock.RLock()
 	defer q.lock.RUnlock()
 
@@ -32,6 +33,7 @@ func (q *myQueue) push(v interface{}) (ok bool, err error) {
 
 	select {
 	case q.queue <- v:
+		q.size++
 		ok = true
 	default:
 		ok = false
@@ -40,6 +42,34 @@ func (q *myQueue) push(v interface{}) (ok bool, err error) {
 	return
 }
 
-func (q *myQueue) pull() (interface{}, error) {
+// 拉取队列信息
+func (q *myQueue) Pull() (interface{}, error) {
+	select {
+	case v, ok := <-q.queue:
+		if !ok {
+			return nil, queueClosedError // 队列关闭时
+		}
+		q.size--
 
+		return v, nil
+	default:
+		return nil, nil // 队列为空时
+	}
+}
+
+// 获取队列中消息数量
+func (q *myQueue) Size() uint32 {
+	return q.size
+}
+
+// 关闭队列
+func (q *myQueue) Close() bool {
+	if atomic.CompareAndSwapUint32(&q.closed, 0, 1) {
+		q.lock.Lock()
+		close(q.queue)
+		q.lock.Unlock()
+		return true
+	}
+
+	return false
 }
