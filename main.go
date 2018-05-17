@@ -6,11 +6,14 @@ import (
 	"os"
 	"shortUrl/shortcode"
 	"shortUrl/tools"
+	"shortUrl/queue"
+	"time"
 )
 
-var cacheDir = "./cache/"
-
-var local = "127.0.0.1:8888/"
+var cacheDir = "./cache/"     // 缓存文件
+var local = "127.0.0.1:8888/" // 服务器监听地址
+var queueSize uint32 = 20000  // 队列大小
+var myQueue *queue.MyQueue    // 队列实例
 
 func init() {
 	// 判断缓存文件夹是否存在
@@ -21,6 +24,9 @@ func init() {
 
 	// 初始化唯一ID发号器
 	tools.Newuid(cacheDir + "uidcache")
+
+	// 初始缓存队列
+	myQueue = queue.NewMyQueue(queueSize)
 }
 
 func main() {
@@ -68,7 +74,25 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		panic("获取短链接编码错误")
 	}
 
-	fmt.Fprintf(w, local+str)
+	ok, err := myQueue.Push(&myRequest{
+		uid:       id,
+		shortcode: str,
+		urlStr:    urlStr,
+		time:      time.Now(),
+	})
+
+	fmt.Println("queue size: ", myQueue.Size())
+
+	if !ok {
+		if err == nil { // 队列已满
+			fmt.Fprintf(w, "队列已满")
+		} else { // 队列关闭
+			fmt.Fprintf(w, err.Error())
+		}
+	} else {
+		fmt.Fprintf(w, local+str)
+	}
+
 }
 
 // 短域名转跳
@@ -76,8 +100,18 @@ func index(w http.ResponseWriter, r *http.Request) {
 	str := r.URL.Path
 	rs := []rune(str)
 	str = string(rs[1:])
-
-	w.Header().Set("Location", "http://llheng.info")
+	id, err := shortcode.Decode(str)
+	if err != nil {
+		w.WriteHeader(404)
+		return
+	}
+	w.Header().Set("Location", "http://llheng.info/"+string(id))
 	w.WriteHeader(302)
-	//fmt.Fprintf(w, str)
+}
+
+type myRequest struct {
+	uid       uint64
+	shortcode string
+	urlStr    string
+	time      time.Time
 }
