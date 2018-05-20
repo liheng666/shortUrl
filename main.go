@@ -8,12 +8,22 @@ import (
 	"shortUrl/tools"
 	"shortUrl/queue"
 	"time"
+	"database/sql"
 )
 
-var cacheDir = "./cache/"     // 缓存文件
-var local = "127.0.0.1:8888/" // 服务器监听地址
-var queueSize uint32 = 20000  // 队列大小
-var myQueue *queue.MyQueue    // 队列实例
+var cacheDir = "./cache/"    // 缓存文件
+var queueSize uint32 = 20000 // 队列大小
+var myQueue *queue.MyQueue   // 队列实例
+var config Config            // 配置
+var DB *sql.DB               // DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
+
+// 创建
+type myRequest struct {
+	uid       uint64
+	shortcode string
+	urlStr    string
+	time      time.Time
+}
 
 func init() {
 	// 判断缓存文件夹是否存在
@@ -21,6 +31,12 @@ func init() {
 	if os.IsNotExist(err) {
 		os.Mkdir(cacheDir, 0700) // 当不存在时创建
 	}
+
+	// 加载配置文件
+	config = LoadConfig("./config")
+
+	// DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
+	DB = config.Db.Conn()
 
 	// 初始化唯一ID发号器
 	tools.Newuid(cacheDir + "uidcache")
@@ -40,7 +56,7 @@ func main() {
 	mux.HandleFunc("/getShortUrl", getShortUrl)
 
 	server := http.Server{
-		Addr:    "127.0.0.1:8888",
+		Addr:    config.ServerAddress,
 		Handler: mux,
 	}
 
@@ -90,7 +106,7 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, err.Error())
 		}
 	} else {
-		fmt.Fprintf(w, local+str)
+		fmt.Fprintf(w, str)
 	}
 
 }
@@ -107,11 +123,4 @@ func index(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Location", "http://llheng.info/"+string(id))
 	w.WriteHeader(302)
-}
-
-type myRequest struct {
-	uid       uint64
-	shortcode string
-	urlStr    string
-	time      time.Time
 }
