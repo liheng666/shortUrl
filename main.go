@@ -9,12 +9,15 @@ import (
 	"shortUrl/queue"
 	"time"
 	"database/sql"
+	"shortUrl/myconfig"
+	"shortUrl/db"
+	"strconv"
 )
 
 var cacheDir = "./cache/"    // 缓存文件
 var queueSize uint32 = 20000 // 队列大小
 var myQueue *queue.MyQueue   // 队列实例
-var config Config            // 配置
+var config myconfig.MyConfig // 配置
 var DB *sql.DB               // DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
 
 // 创建
@@ -33,10 +36,12 @@ func init() {
 	}
 
 	// 加载配置文件
-	config = LoadConfig("./config")
+	config = myconfig.LoadConfig("./config.json")
 
 	// DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
 	DB = config.Db.Conn()
+	// 初始化数据库表单
+	db.CreateTables(DB, 100)
 
 	// 初始化唯一ID发号器
 	tools.Newuid(cacheDir + "uidcache")
@@ -121,6 +126,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		return
 	}
-	w.Header().Set("Location", "http://llheng.info/"+string(id))
+	w.Header().Set("Location", "http://llheng.info/"+strconv.Itoa(int(id)))
 	w.WriteHeader(302)
 }

@@ -5,5 +5,5 @@
     "address": "127.0.0.1:3306",
     "dbname": "shortcode"
   },
-  "ServerAddress": "127.0.0.1:8888/"
+  "ServerAddress": "127.0.0.1:8888"
 }

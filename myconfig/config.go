@@ -1,16 +1,17 @@
-package main
+package myconfig
 
 import (
 	"os"
 	"encoding/json"
+	"shortUrl/db"
 )
 
-type Config struct {
-	Db Db //mysql配置
-	ServerAddress string  // 服务器监听地址
+type MyConfig struct {
+	Db            db.Db  //mysql配置
+	ServerAddress string // 服务器监听地址
 }
 
-func LoadConfig(path string) Config {
+func LoadConfig(path string) MyConfig {
 	file, err := os.Open(path)
 	if err != nil {
 		panic(err)
@@ -18,7 +19,7 @@ func LoadConfig(path string) Config {
 
 	decoder := json.NewDecoder(file)
 
-	conf := Config{}
+	conf := MyConfig{}
 	err = decoder.Decode(&conf)
 	if err != nil {
 		panic(err)
