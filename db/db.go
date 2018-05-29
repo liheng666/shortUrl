@@ -51,3 +51,4 @@ func CreateTables(DB *sql.DB, n int) {
 		}
 	}
 }
+

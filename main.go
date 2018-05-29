@@ -48,6 +48,7 @@ func init() {
 
 	// 初始缓存队列
 	myQueue = queue.NewMyQueue(queueSize)
+
 }
 
 func main() {
@@ -66,6 +67,25 @@ func main() {
 	}
 
 	server.ListenAndServe()
+
+}
+
+func dbStoreServer() error {
+	for {
+		v, err := myQueue.Pull()
+		if err != nil { // 缓存队列已经关闭
+			return err
+		} else if v == nil && err == nil { // 队列为空
+			return nil
+		}
+
+		value, ok := v.(myRequest)
+		if !ok {
+			panic("缓存队列中数据类型不正确")
+		}
+
+		return nil
+	}
 }
 
 // log中间件
