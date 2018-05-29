@@ -38,7 +38,7 @@ func CreateTables(DB *sql.DB, n int) {
 	str := "CREATE TABLE IF NOT EXISTS %s (" +
 		"uid BIGINT UNSIGNED," +
 		"shortcode VARCHAR(20) NOT NULL," +
-		"urlStr VARCHAR(500) NOT NULL," +
+		"urlstr VARCHAR(500) NOT NULL," +
 		"time DATETIME," +
 		"INDEX (uid)" +
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8"

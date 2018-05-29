@@ -12,6 +12,7 @@ import (
 	"shortUrl/myconfig"
 	"shortUrl/db"
 	"strconv"
+	"log"
 )
 
 var cacheDir = "./cache/"    // 缓存文件
@@ -19,7 +20,7 @@ var queueSize uint32 = 20000 // 队列大小
 var myQueue *queue.MyQueue   // 队列实例
 var config myconfig.MyConfig // 配置
 var DB *sql.DB               // DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
-
+var tableCount = 100
 // 创建
 type myRequest struct {
 	uid       uint64
@@ -41,7 +42,7 @@ func init() {
 	// DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
 	DB = config.Db.Conn()
 	// 初始化数据库表单
-	db.CreateTables(DB, 100)
+	db.CreateTables(DB, tableCount)
 
 	// 初始化唯一ID发号器
 	tools.Newuid(cacheDir + "uidcache")
@@ -52,6 +53,13 @@ func init() {
 }
 
 func main() {
+	go func() {
+		err := dbStoreServer()
+		if err != nil {
+			log.Fatalln("dbStoreServer", err)
+		}
+	}()
+
 	mux := http.NewServeMux()
 
 	// icon 请求返回404
@@ -74,17 +82,27 @@ func dbStoreServer() error {
 	for {
 		v, err := myQueue.Pull()
 		if err != nil { // 缓存队列已经关闭
+			fmt.Println(err)
 			return err
 		} else if v == nil && err == nil { // 队列为空
-			return nil
+			fmt.Println("队列为空")
+			time.Sleep(1 * time.Second)
+			continue
 		}
-
-		value, ok := v.(myRequest)
+		fmt.Println("queue pull")
+		mr, ok := v.(*myRequest)
 		if !ok {
 			panic("缓存队列中数据类型不正确")
 		}
-
-		return nil
+		sql := fmt.Sprintf("insert into short_%d(uid,shortcode,urlstr,time) values(?,?,?,?)", mr.uid%uint64(tableCount))
+		stmt, err := DB.Prepare(sql)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = stmt.Exec(mr.uid, mr.shortcode, mr.urlStr, mr.time)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -122,7 +140,7 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		time:      time.Now(),
 	})
 
-	fmt.Println("queue size: ", myQueue.Size())
+	fmt.Println("queue size: ", myQueue.Size(), id)
 
 	if !ok {
 		if err == nil { // 队列已满
@@ -131,7 +149,7 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, err.Error())
 		}
 	} else {
-		fmt.Fprintf(w, str)
+		fmt.Fprintf(w, "llheng.info/"+str)
 	}
 
 }
