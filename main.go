@@ -13,6 +13,8 @@ import (
 	"shortUrl/db"
 	"strconv"
 	"log"
+	"os/signal"
+	"syscall"
 )
 
 var cacheDir = "./cache/"    // 缓存文件
@@ -53,6 +55,29 @@ func init() {
 }
 
 func main() {
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		_ = <-c
+		//关闭发号器
+		tools.Closeuid()
+		// 关闭队列
+		myQueue.Close()
+		// 判断队列中是否还有值
+		for {
+			if myQueue.Size() == 0 {
+				break
+			}
+			time.Sleep(100)
+		}
+		fmt.Println("服务器关闭中......")
+		// 关闭
+		time.Sleep(1 * time.Second)
+
+		os.Exit(0)
+
+	}()
+
 	go func() {
 		err := dbStoreServer()
 		if err != nil {
@@ -78,6 +103,7 @@ func main() {
 
 }
 
+// 存储队列中的数据
 func dbStoreServer() error {
 	for {
 		v, err := myQueue.Pull()
