@@ -3,7 +3,7 @@ package myconfig
 import (
 	"os"
 	"encoding/json"
-	"shortUrl/db"
+	"shortUrl/app/db"
 )
 
 type MyConfig struct {

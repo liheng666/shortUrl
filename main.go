@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"fmt"
 	"os"
-	"shortUrl/shortcode"
+	"shortUrl/tools/shortcode"
 	"shortUrl/tools"
-	"shortUrl/queue"
+	"shortUrl/tools/queue"
 	"time"
 	"database/sql"
-	"shortUrl/myconfig"
-	"shortUrl/db"
+	"shortUrl/app/myconfig"
+	"shortUrl/app/db"
 	"strconv"
 	"log"
 	"os/signal"
@@ -23,13 +23,7 @@ var myQueue *queue.MyQueue   // 队列实例
 var config myconfig.MyConfig // 配置
 var DB *sql.DB               // DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
 var tableCount = 100
-// 创建
-type myRequest struct {
-	uid       uint64
-	shortcode string
-	urlStr    string
-	time      time.Time
-}
+var worker *db.Worker
 
 func init() {
 	// 判断缓存文件夹是否存在
@@ -51,10 +45,10 @@ func init() {
 
 	// 初始缓存队列
 	myQueue = queue.NewMyQueue(queueSize)
-
 }
 
 func main() {
+	// 程序优雅关闭
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
@@ -63,30 +57,23 @@ func main() {
 		tools.Closeuid()
 		// 关闭队列
 		myQueue.Close()
-		// 判断队列中是否还有值
-		for {
-			if myQueue.Size() == 0 {
-				break
-			}
-			time.Sleep(100)
-		}
-		fmt.Println("服务器关闭中......")
-		// 关闭
-		time.Sleep(1 * time.Second)
 
+		// 判断保存数据进程池是否关闭
+		v, ok := <-worker.Closed
+		if !ok || v != true {
+			log.Fatal("保存数据进程池出错")
+		}
+
+		fmt.Println("服务器关闭中......")
 		os.Exit(0)
 
 	}()
 
-	go func() {
-		err := dbStoreServer()
-		if err != nil {
-			log.Fatalln("dbStoreServer", err)
-		}
-	}()
+	// 启动保存数据进程池
+	worker = db.NewWorker(myQueue, DB)
+	go worker.Start(100)
 
 	mux := http.NewServeMux()
-
 	// icon 请求返回404
 	mux.Handle("/favicon.ico", http.NotFoundHandler())
 
@@ -104,28 +91,21 @@ func main() {
 }
 
 // 存储队列中的数据
-func dbStoreServer() error {
+func dbStoreServer() {
 	for {
 		v, err := myQueue.Pull()
 		if err != nil { // 缓存队列已经关闭
-			fmt.Println(err)
-			return err
+			break
 		} else if v == nil && err == nil { // 队列为空
-			fmt.Println("队列为空")
-			time.Sleep(1 * time.Second)
+			time.Sleep(100)
 			continue
 		}
-		fmt.Println("queue pull")
-		mr, ok := v.(*myRequest)
+
+		mr, ok := v.(*db.Request)
 		if !ok {
 			panic("缓存队列中数据类型不正确")
 		}
-		sql := fmt.Sprintf("insert into short_%d(uid,shortcode,urlstr,time) values(?,?,?,?)", mr.uid%uint64(tableCount))
-		stmt, err := DB.Prepare(sql)
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = stmt.Exec(mr.uid, mr.shortcode, mr.urlStr, mr.time)
+		err = mr.Insert(DB)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -159,11 +139,11 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		panic("获取短链接编码错误")
 	}
 
-	ok, err := myQueue.Push(&myRequest{
-		uid:       id,
-		shortcode: str,
-		urlStr:    urlStr,
-		time:      time.Now(),
+	ok, err := myQueue.Push(&db.Request{
+		Uid:       id,
+		Shortcode: str,
+		UrlStr:    urlStr,
+		Time:      time.Now(),
 	})
 
 	fmt.Println("queue size: ", myQueue.Size(), id)

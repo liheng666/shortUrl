@@ -7,6 +7,8 @@ import (
 	"strconv"
 )
 
+var tableCount int
+
 type Db struct {
 	Username string
 	Password string
@@ -34,7 +36,7 @@ func (d *Db) Conn() *sql.DB {
 
 // 创建数据库表
 func CreateTables(DB *sql.DB, n int) {
-
+	tableCount = n
 	str := "CREATE TABLE IF NOT EXISTS %s (" +
 		"uid BIGINT UNSIGNED," +
 		"shortcode VARCHAR(20) NOT NULL," +
@@ -51,4 +53,3 @@ func CreateTables(DB *sql.DB, n int) {
 		}
 	}
 }
-
