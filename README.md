@@ -63,6 +63,17 @@ coverage: 93.1% of statements
 ok      shortUrl/shortcode      0.006s
 ```
 
+### 添加性能测试
+```
+goos: darwin
+goarch: amd64
+pkg: shortUrl/tools/shortcode
+3000000	       349 ns/op
+5000000	       235 ns/op
+PASS
+coverage: 93.5% of statements
+```
+
 ## 消息队列
 
 使用缓存channel来实现消息队列FIFO

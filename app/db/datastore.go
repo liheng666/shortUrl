@@ -32,7 +32,7 @@ func (w *Worker) dbStoreServer() {
 		if err != nil { // 缓存队列已经关闭
 			break
 		} else if v == nil && err == nil { // 队列为空
-			time.Sleep(10)
+			time.Sleep(1 * time.Second)
 			continue
 		}
 

@@ -24,3 +24,15 @@ func TestDecode(t *testing.T) {
 		t.Fatal("Decode 返回结果不正确!!!")
 	}
 }
+
+func BenchmarkEncode(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Encode(6500000)
+	}
+}
+
+func BenchmarkDecode(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Decode("oOWw")
+	}
+}

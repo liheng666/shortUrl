@@ -146,6 +146,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	id, err := shortcode.Decode(str)
 	if err != nil {
 		w.WriteHeader(404)
+		fmt.Fprintf(w, "not found")
 		return
 	}
 
@@ -155,6 +156,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	err = myRequest.Select(DB)
 	if err != nil {
 		w.WriteHeader(404)
+		fmt.Fprintf(w, "not found")
 		return
 	}
 

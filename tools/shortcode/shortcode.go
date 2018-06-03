@@ -6,12 +6,20 @@ import (
 )
 
 var (
-	// 64进制使用到的字符列表
-	strCode = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/")
+	// 64进制使用到的字符列表(编码使用)
+	endCode = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+/")
+	// 64进制使用到的字符map(解码使用)
+	deCode = map[rune]int{}
 
 	// 64进制
 	SYSTEM uint64 = 64
 )
+
+func init() {
+	for k, v := range endCode {
+		deCode[v] = k
+	}
+}
 
 // 编码
 func Encode(id uint64) (string, error) {
@@ -21,12 +29,12 @@ func Encode(id uint64) (string, error) {
 		var k uint64 // 64进制字符数组下标
 		if id < SYSTEM {
 			k = id
-			r = strCode[k]
+			r = endCode[k]
 			data = append([]rune{r}, data...)
 			break
 		} else {
 			k = id % SYSTEM
-			r = strCode[k]
+			r = endCode[k]
 			data = append([]rune{r}, data...)
 
 			id = (id - k) / SYSTEM
@@ -56,13 +64,14 @@ func Decode(str string) (uint64, error) {
 	return value, nil
 }
 
-// 过去字符在定义好的字符数组中的位置（可以使用map优化）
+// 过去字符在定义好的字符数组中的位置
 func searchV(rune rune) (uint64, error) {
-	for k, v := range strCode {
-		if v == rune {
-			return uint64(k), nil
-		}
+
+	k, ok := deCode[rune]
+	if !ok {
+		return 0, errors.New("字符不存在")
 	}
 
-	return 0, errors.New("字符不存在")
+	return uint64(k), nil
+
 }
