@@ -50,12 +50,12 @@ func (w *Worker) dbStoreServer() {
 
 // 开始运行
 func (w *Worker) Start(n int) {
-	fmt.Println("开始")
+	fmt.Println("数据存储协程池启动")
 	w.wg.Add(n)
 	for i := 0; i < n; i++ {
 		go w.dbStoreServer()
 	}
 	w.wg.Wait()
 	w.Closed <- true
-	fmt.Println("end")
+	fmt.Println("数据存储协程池已关闭")
 }

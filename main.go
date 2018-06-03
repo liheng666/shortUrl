@@ -11,19 +11,20 @@ import (
 	"database/sql"
 	"shortUrl/app/myconfig"
 	"shortUrl/app/db"
-	"strconv"
 	"log"
 	"os/signal"
 	"syscall"
 )
 
-var cacheDir = "./cache/"    // 缓存文件
-var queueSize uint32 = 20000 // 队列大小
-var myQueue *queue.MyQueue   // 队列实例
-var config myconfig.MyConfig // 配置
-var DB *sql.DB               // DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
-var tableCount = 100
-var worker *db.Worker
+var (
+	cacheDir          = "./cache/" // 缓存文件
+	queueSize  uint32 = 20000      // 队列大小
+	tableCount        = 100        // 数据库分表数量
+	myQueue    *queue.MyQueue      // 队列实例
+	config     myconfig.MyConfig   // 配置
+	DB         *sql.DB             // DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
+	worker     *db.Worker          // 保存数据纤程池
+)
 
 func init() {
 	// 判断缓存文件夹是否存在
@@ -57,7 +58,6 @@ func main() {
 		tools.Closeuid()
 		// 关闭队列
 		myQueue.Close()
-
 		// 判断保存数据进程池是否关闭
 		v, ok := <-worker.Closed
 		if !ok || v != true {
@@ -88,28 +88,6 @@ func main() {
 
 	server.ListenAndServe()
 
-}
-
-// 存储队列中的数据
-func dbStoreServer() {
-	for {
-		v, err := myQueue.Pull()
-		if err != nil { // 缓存队列已经关闭
-			break
-		} else if v == nil && err == nil { // 队列为空
-			time.Sleep(100)
-			continue
-		}
-
-		mr, ok := v.(*db.Request)
-		if !ok {
-			panic("缓存队列中数据类型不正确")
-		}
-		err = mr.Insert(DB)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
 }
 
 // log中间件
@@ -170,6 +148,16 @@ func index(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		return
 	}
-	w.Header().Set("Location", "http://llheng.info/"+strconv.Itoa(int(id)))
+
+	myRequest := &db.Request{
+		Uid: id,
+	}
+	err = myRequest.Select(DB)
+	if err != nil {
+		w.WriteHeader(404)
+		return
+	}
+
+	w.Header().Set("Location", myRequest.UrlStr)
 	w.WriteHeader(302)
 }
