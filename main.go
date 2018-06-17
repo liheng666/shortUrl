@@ -14,6 +14,8 @@ import (
 	"log"
 	"os/signal"
 	"syscall"
+	"shortUrl/app"
+	"net/url"
 )
 
 var (
@@ -107,6 +109,13 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "参数不存在")
 	}
 
+	// 规范化长链接，去除Scheme参数
+	url, err := url.Parse(urlStr)
+	if err != nil {
+		fmt.Fprintf(w, err.Error())
+	}
+	urlStr = url.Host + url.RequestURI()
+
 	id, err := tools.GetId()
 	if err != nil {
 		panic("获取唯一ID错误")
@@ -124,7 +133,7 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		Time:      time.Now(),
 	})
 
-	fmt.Println("queue size: ", myQueue.Size(), id)
+	//fmt.Println("queue size: ", myQueue.Size(), id)
 
 	if !ok {
 		if err == nil { // 队列已满
@@ -133,7 +142,8 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, err.Error())
 		}
 	} else {
-		fmt.Fprintf(w, "llheng.info/"+str)
+		data := map[string]string{"url": config.BaseUrl + str}
+		app.ApiJson(w, 200, "ok", data)
 	}
 
 }
@@ -160,6 +170,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Location", myRequest.UrlStr)
+	w.Header().Set("Location", "http://"+myRequest.UrlStr)
 	w.WriteHeader(302)
 }

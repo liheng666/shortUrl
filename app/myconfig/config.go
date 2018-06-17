@@ -9,6 +9,7 @@ import (
 type MyConfig struct {
 	Db            db.Db  //mysql配置
 	ServerAddress string // 服务器监听地址
+	BaseUrl       string // 短链接网址
 }
 
 func LoadConfig(path string) MyConfig {
