@@ -43,8 +43,10 @@ func init() {
 	// 初始化数据库表单
 	db.CreateTables(DB, tableCount)
 
+	// 获取发号器初始uid
+	uid := db.GetInitUid(DB, tableCount)
 	// 初始化唯一ID发号器
-	tools.Newuid(cacheDir + "uidcache")
+	tools.Newuid(uint64(uid))
 
 	// 初始缓存队列
 	myQueue = queue.NewMyQueue(queueSize)
@@ -121,6 +123,8 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		panic("获取唯一ID错误")
 	}
 
+	fmt.Println("uid:", id)
+
 	str, err := shortcode.Encode(id)
 	if err != nil {
 		panic("获取短链接编码错误")
@@ -132,8 +136,6 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		UrlStr:    urlStr,
 		Time:      time.Now(),
 	})
-
-	//fmt.Println("queue size: ", myQueue.Size(), id)
 
 	if !ok {
 		if err == nil { // 队列已满

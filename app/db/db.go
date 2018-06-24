@@ -53,3 +53,26 @@ func CreateTables(DB *sql.DB, n int) {
 		}
 	}
 }
+
+// 获取启动初始uid
+func GetInitUid(DB *sql.DB, n int) int64 {
+	var uid int64 = 0
+	var id int64
+	str := "select uid from %s order by uid desc limit 1"
+	for i := 0; i < n; i++ {
+		mySql := fmt.Sprintf(str, "short_"+strconv.Itoa(i))
+		err := DB.QueryRow(mySql).Scan(&id)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				continue
+			}
+			panic(err)
+		}
+
+		if id > uid {
+			uid = id
+		}
+	}
+
+	return uid
+}
