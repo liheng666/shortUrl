@@ -3,6 +3,7 @@ package tools
 import (
 	"sync"
 	"errors"
+	"fmt"
 )
 
 var (
@@ -16,6 +17,7 @@ var (
 初始发号器
  */
 func Newuid(uid uint64) {
+	fmt.Println("发号器初始化...")
 	id = uid
 }
 

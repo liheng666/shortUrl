@@ -4,6 +4,7 @@ import (
 	"os"
 	"encoding/json"
 	"shortUrl/app/db"
+	"fmt"
 )
 
 type MyConfig struct {
@@ -13,6 +14,7 @@ type MyConfig struct {
 }
 
 func LoadConfig(path string) MyConfig {
+	fmt.Println("加载配置文件...")
 	file, err := os.Open(path)
 	if err != nil {
 		panic(err)

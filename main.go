@@ -49,10 +49,12 @@ func init() {
 	tools.Newuid(uint64(uid))
 
 	// 初始缓存队列
+	fmt.Println("数据队列初始化...")
 	myQueue = queue.NewMyQueue(queueSize)
 }
 
 func main() {
+	fmt.Println("短链接服务器启动中...")
 	// 程序优雅关闭
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -90,6 +92,7 @@ func main() {
 		Handler: mux,
 	}
 
+	fmt.Println("短链接服务器启动完成")
 	server.ListenAndServe()
 
 }
