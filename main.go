@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"shortUrl/app"
 	"net/url"
+	"html/template"
+	"regexp"
 )
 
 var (
@@ -87,6 +89,8 @@ func main() {
 	// 获取短链接
 	mux.HandleFunc("/getShortUrl", getShortUrl)
 
+	mux.HandleFunc("/index", home)
+
 	server := http.Server{
 		Addr:    config.ServerAddress,
 		Handler: mux,
@@ -102,22 +106,38 @@ func logMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 记录需要的信息
 		fmt.Println("this is log")
-
 		h(w, r)
 	}
 }
 
+func home(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("./index.html")
+	t.Execute(w, nil)
+}
+
 // 获取短域名
 func getShortUrl(w http.ResponseWriter, r *http.Request) {
-	urlStr := r.FormValue("url_srt")
+	urlStr := r.FormValue("url_str")
 	if urlStr == "" {
 		fmt.Fprintf(w, "参数不存在")
+		return
+	}
+
+	regexpStr, err := regexp.Compile("^(http|https|ftp)*.*(com|edu|gov|int|mil|net|org|biz|arpa|info).*$")
+	if err != nil {
+		fmt.Fprintf(w, err.Error())
+		return
+	}
+	if !regexpStr.MatchString(urlStr) {
+		fmt.Fprintf(w, "url格式不正确")
+		return
 	}
 
 	// 规范化长链接，去除Scheme参数
 	url, err := url.Parse(urlStr)
 	if err != nil {
 		fmt.Fprintf(w, err.Error())
+		return
 	}
 	urlStr = url.Host + url.RequestURI()
 

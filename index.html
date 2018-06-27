@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>短链接服务</title>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- 可选的 Bootstrap 主题文件（一般不用引入） -->
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+
+    <script>
+        $(document).ready(function () {
+            $("#submit").click(function () {
+                var long_url = $('#long-url').val();
+                console.log(long_url);
+                $.get('/getShortUrl', {'url_str': long_url}, function (e) {
+                    if (e.status == 200) {
+                        $('#short-url').val(e.data.url);
+                    } else {
+                        alert(e.message);
+                    }
+                }, 'json');
+            });
+        });
+
+    </script>
+</head>
+
+
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div style="height: 100px"></div>
+        <div class="col-md-6 col-md-offset-4">
+            <form class="form-inline">
+                <div class="form-group">
+                    <label for="exampleInputName2">原网址</label>
+                    <input type="text" class="form-control" id="long-url" placeholder="原网址">
+                </div>
+                <button type="button" id="submit" class="btn btn-default">生成</button>
+            </form>
+        </div>
+        <div class="col-md-6 col-md-offset-4">
+            <form class="form-inline">
+                <div class="form-group">
+                    <label for="exampleInputName2">短网址</label>
+                    <input type="text" class="form-control" id="short-url">
+                </div>
+            </form>
+        </div>
+
+    </div>
+</body>
+</html>
