@@ -13,7 +13,7 @@ type BaseApi struct {
 }
 
 // http响应返回json
-func ApiJson(w http.ResponseWriter, status int, message string, data interface{}) {
+func ApiSuccess(w http.ResponseWriter, status int, message string, data interface{}) {
 	value := BaseApi{
 		Status:  status,
 		Message: message,

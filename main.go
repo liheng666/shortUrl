@@ -110,6 +110,7 @@ func logMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// web页面
 func home(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("./index.html")
 	t.Execute(w, nil)
@@ -123,7 +124,7 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	regexpStr, err := regexp.Compile("^(http|https|ftp)*.*(com|edu|gov|int|mil|net|org|biz|arpa|info).*$")
+	regexpStr, err := regexp.Compile("^(http|https)*.*(cn|com|edu|gov|int|mil|net|org|biz|arpa|info).*$")
 	if err != nil {
 		fmt.Fprintf(w, err.Error())
 		return
@@ -168,7 +169,7 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		data := map[string]string{"url": config.BaseUrl + str}
-		app.ApiJson(w, 200, "ok", data)
+		app.ApiSuccess(w, 200, "ok", data)
 	}
 
 }
