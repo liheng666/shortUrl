@@ -14,6 +14,7 @@
 .glide/
 
 .idea/
+.DS_Store
 
 # 缓存文件夹
 cache/
