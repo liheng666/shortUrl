@@ -11,13 +11,13 @@ import (
 	"database/sql"
 	"shortUrl/app/myconfig"
 	"shortUrl/app/db"
-	"log"
 	"os/signal"
 	"syscall"
 	"shortUrl/app"
 	"net/url"
 	"html/template"
 	"regexp"
+	"shortUrl/tools/mylog"
 )
 
 var (
@@ -31,6 +31,8 @@ var (
 )
 
 func init() {
+	// 初始化自定义log
+	mylog.InitLog()
 	// 判断缓存文件夹是否存在
 	_, err := os.Stat(cacheDir)
 	if os.IsNotExist(err) {
@@ -69,7 +71,7 @@ func main() {
 		// 判断保存数据进程池是否关闭
 		v, ok := <-worker.Closed
 		if !ok || v != true {
-			log.Fatal("保存数据进程池出错")
+			mylog.Error.Fatalln("保存数据进程池出错")
 		}
 
 		fmt.Println("服务器关闭中......")
@@ -105,7 +107,7 @@ func main() {
 func logMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 记录需要的信息
-		fmt.Println("this is log")
+		fmt.Println("this is mylog")
 		h(w, r)
 	}
 }
@@ -144,14 +146,14 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 
 	id, err := tools.GetId()
 	if err != nil {
-		panic("获取唯一ID错误")
+		mylog.Error.Fatalf("获取唯一ID错误")
 	}
 
 	fmt.Println("uid:", id)
 
 	str, err := shortcode.Encode(id)
 	if err != nil {
-		panic("获取短链接编码错误")
+		mylog.Error.Fatalf("获取短链接编码错误")
 	}
 
 	ok, err := myQueue.Push(&db.Request{
