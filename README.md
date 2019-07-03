@@ -1,6 +1,6 @@
 # Go语言实现一个短链接服务器
 
-demo地址  http://s.llheng.info/index
+demo地址  http://s.llheng.info/k
 
 # 使用 
 1. 编译后将二进制文件和config.json、index.html放在同一目录下
