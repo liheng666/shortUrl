@@ -107,7 +107,7 @@ func main() {
 func logMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 记录需要的信息
-		fmt.Println("this is mylog")
+		fmt.Println("this is mlog")
 		h(w, r)
 	}
 }

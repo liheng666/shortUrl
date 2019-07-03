@@ -1,5 +1,11 @@
 # Go语言实现一个短链接服务器
 
+demo地址  http://s.llheng.info/index
+
+# 使用 
+1. 编译后将二进制文件和config.json、index.html放在同一目录下
+2. 配置config.json文件中的mysql和端口，运行二进制文件即可
+
 ## 主要模块
 ![架构图](http://o99lnabej.bkt.clouddn.com/%E7%9F%AD%E9%93%BE%E6%8E%A5.PNG)
 ### 1. web服务器
