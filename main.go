@@ -62,8 +62,10 @@ func init() {
 func exitFunc(){
 	//关闭发号器
 	tools.Closed()
+	fmt.Println("发号器关闭!!!")
 	// 关闭队列
 	myQueue.Close()
+	fmt.Println("队列关闭!!!")
 	// 判断保存数据进程池是否关闭
 	v, ok := <-worker.Closed
 	if !ok || v != true {
