@@ -1,4 +1,4 @@
-package mylog
+package app
 
 import (
 	"log"

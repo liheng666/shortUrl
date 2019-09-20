@@ -18,7 +18,6 @@ type Db struct {
 
 func (d *Db) Conn() *sql.DB {
 	fmt.Println("连接mysql服务器...")
-	//dsn := "root:123456@tcp(localhost:3306)/sqlx_db?charset=utf8mb4"
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s", d.Username, d.Password, d.Address, d.Dbname)
 
 	DB, err := sql.Open("mysql", dsn)

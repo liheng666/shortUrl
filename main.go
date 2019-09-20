@@ -1,43 +1,34 @@
 package main
 
 import (
-	"net/http"
-	"fmt"
-	"os"
-	"shortUrl/tools/shortcode"
-	"shortUrl/tools"
-	"shortUrl/tools/queue"
-	"time"
 	"database/sql"
-	"shortUrl/app/myconfig"
-	"shortUrl/app/db"
-	"os/signal"
-	"syscall"
-	"shortUrl/app"
-	"net/url"
+	"fmt"
 	"html/template"
+	"net/http"
+	"net/url"
+	"os"
+	"os/signal"
 	"regexp"
-	"shortUrl/tools/mylog"
+	"shortUrl/app"
+	"shortUrl/app/db"
+	"shortUrl/app/myconfig"
+	"shortUrl/tools"
+	"syscall"
+	"time"
 )
 
 var (
-	cacheDir          = "./cache/" // 缓存文件
-	queueSize  uint32 = 20000      // 队列大小
-	tableCount        = 100        // 数据库分表数量
-	myQueue    *queue.MyQueue      // 队列实例
-	config     myconfig.MyConfig   // 配置
-	DB         *sql.DB             // DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
-	worker     *db.Worker          // 保存数据纤程池
+	queueSize  = 20000           // 队列大小
+	tableCount = 100             // 数据库分表数量
+	myQueue    *app.MyQueue      // 队列实例
+	config     myconfig.MyConfig // 配置
+	DB         *sql.DB           // DB是一个数据库（操作）句柄，代表一个具有零到多个底层连接的连接池。它可以安全的被多个go程同时使用。
+	worker     *app.Worker       // 保存数据纤程池
 )
 
 func init() {
 	// 初始化自定义log
-	mylog.InitLog()
-	// 判断缓存文件夹是否存在
-	_, err := os.Stat(cacheDir)
-	if os.IsNotExist(err) {
-		os.Mkdir(cacheDir, 0700) // 当不存在时创建
-	}
+	app.InitLog()
 
 	// 加载配置文件
 	config = myconfig.LoadConfig("./config.json")
@@ -53,35 +44,38 @@ func init() {
 	tools.Newuid(uint64(uid))
 
 	// 初始缓存队列
-	fmt.Println("数据队列初始化...")
-	myQueue = queue.NewMyQueue(queueSize)
-}
+	myQueue = app.NewMyQueue(queueSize)
+	fmt.Println("数据队列初始化")
+	// 启动保存数据进程池
+	worker = app.NewWorker(myQueue, DB)
+	go worker.InitWorker(100)
 
-func main() {
-	fmt.Println("短链接服务器启动中...")
 	// 程序优雅关闭
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
 		_ = <-c
-		//关闭发号器
-		tools.Closeuid()
-		// 关闭队列
-		myQueue.Close()
-		// 判断保存数据进程池是否关闭
-		v, ok := <-worker.Closed
-		if !ok || v != true {
-			mylog.Error.Fatalln("保存数据进程池出错")
-		}
-
-		fmt.Println("服务器关闭中......")
-		os.Exit(0)
-
+		exitFunc()
 	}()
+}
 
-	// 启动保存数据进程池
-	worker = db.NewWorker(myQueue, DB)
-	go worker.Start(100)
+func exitFunc(){
+	//关闭发号器
+	tools.Closed()
+	// 关闭队列
+	myQueue.Close()
+	// 判断保存数据进程池是否关闭
+	v, ok := <-worker.Closed
+	if !ok || v != true {
+		app.Error.Fatalln("保存数据进程池出错")
+	}
+	fmt.Println("服务器关闭!!!")
+	os.Exit(0)
+}
+
+func main() {
+	fmt.Println("短链接服务器启动中...")
+
 
 	mux := http.NewServeMux()
 	// icon 请求返回404
@@ -146,14 +140,14 @@ func getShortUrl(w http.ResponseWriter, r *http.Request) {
 
 	id, err := tools.GetId()
 	if err != nil {
-		mylog.Error.Fatalf("获取唯一ID错误")
+		app.Error.Fatalf("获取唯一ID错误")
 	}
 
 	fmt.Println("uid:", id)
 
-	str, err := shortcode.Encode(id)
+	str, err := tools.Encode(id)
 	if err != nil {
-		mylog.Error.Fatalf("获取短链接编码错误")
+		app.Error.Fatalf("获取短链接编码错误")
 	}
 
 	ok, err := myQueue.Push(&db.Request{
@@ -181,10 +175,10 @@ func index(w http.ResponseWriter, r *http.Request) {
 	str := r.URL.Path
 	rs := []rune(str)
 	str = string(rs[1:])
-	id, err := shortcode.Decode(str)
+	id, err := tools.Decode(str)
 	if err != nil {
-		w.WriteHeader(404)
-		fmt.Fprintf(w, "not found")
+		t, _ := template.ParseFiles("./index.html")
+		t.Execute(w, nil)
 		return
 	}
 
@@ -193,8 +187,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	}
 	err = myRequest.Select(DB)
 	if err != nil {
-		w.WriteHeader(404)
-		fmt.Fprintf(w, "not found")
+		t, _ := template.ParseFiles("./index.html")
+		t.Execute(w, nil)
 		return
 	}
 

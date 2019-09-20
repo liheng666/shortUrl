@@ -38,7 +38,7 @@ func GetId() (uint64, error) {
 }
 
 // 关闭应用是调用，会保存当前的发号状态
-func Closeuid() {
+func Closed() {
 	m.Lock()
 	closed = true
 	m.Unlock()

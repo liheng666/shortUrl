@@ -1,4 +1,4 @@
-package shortcode
+package tools
 
 import (
 	"math"
