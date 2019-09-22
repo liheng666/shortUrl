@@ -11,20 +11,36 @@ import (
 	"time"
 )
 
+var MyQueue *queue
+
 type Worker struct {
-	Queue  *MyQueue
+	Queue  *queue
 	DB     *sql.DB
 	wg     sync.WaitGroup
 	Closed chan bool
 }
 
 // 构建数据存储实例
-func NewWorker(mq *MyQueue, DB *sql.DB) *Worker {
+func NewWorker(n int, DB *sql.DB) *Worker {
+	MyQueue = NewMyQueue(n) // 初始缓存队列
 	return &Worker{
-		Queue:  mq,
+		Queue:  MyQueue,
 		DB:     DB,
 		Closed: make(chan bool, 1),
 	}
+}
+
+// 初始处理数据队列的协程池
+// n: 协程数量
+func (w *Worker) InitWorker(n int) {
+	fmt.Println("数据存储协程池启动...")
+	w.wg.Add(n)
+	for i := 0; i < n; i++ {
+		go w.dbStoreServer()
+	}
+	w.wg.Wait()
+	w.Closed <- true
+	fmt.Println("数据存储协程池已关闭")
 }
 
 // 存储队列中的数据
@@ -46,23 +62,10 @@ func (w *Worker) dbStoreServer() {
 	w.wg.Done()
 }
 
-// 初始处理数据队列的协程池
-// n: 协程数量
-func (w *Worker) InitWorker(n int) {
-	fmt.Println("数据存储协程池启动...")
-	w.wg.Add(n)
-	for i := 0; i < n; i++ {
-		go w.dbStoreServer()
-	}
-	w.wg.Wait()
-	w.Closed <- true
-	fmt.Println("数据存储协程池已关闭")
-}
-
 /**
 待处理数据队列结构体
 */
-type MyQueue struct {
+type queue struct {
 	size   int64            // 队列大小
 	queue  chan *db.Request // 缓存channel
 	closed uint32           // 队列是否关闭 0.正常 1.关闭
@@ -70,14 +73,14 @@ type MyQueue struct {
 }
 
 // 获取实例
-func NewMyQueue(n int) *MyQueue {
-	return &MyQueue{
+func NewMyQueue(n int) *queue {
+	return &queue{
 		queue: make(chan *db.Request, n),
 	}
 }
 
 // 将数据写入队列
-func (q *MyQueue) Push(v *db.Request) (ok bool, err error) {
+func (q *queue) Push(v *db.Request) (ok bool, err error) {
 	q.lock.RLock()
 	defer q.lock.RUnlock()
 
@@ -95,7 +98,7 @@ func (q *MyQueue) Push(v *db.Request) (ok bool, err error) {
 }
 
 // 拉取队列信息
-func (q *MyQueue) Pull() (*db.Request, error) {
+func (q *queue) Pull() (*db.Request, error) {
 	select {
 	case v, ok := <-q.queue:
 		if !ok {
@@ -110,12 +113,12 @@ func (q *MyQueue) Pull() (*db.Request, error) {
 }
 
 // 获取队列中消息数量
-func (q *MyQueue) Size() int64 {
+func (q *queue) Size() int64 {
 	return q.size
 }
 
 // 关闭队列
-func (q *MyQueue) Close() bool {
+func (q *queue) Close() bool {
 	if atomic.CompareAndSwapUint32(&q.closed, 0, 1) {
 		q.lock.Lock()
 		close(q.queue)
